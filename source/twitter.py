@@ -331,7 +331,28 @@ def select_param_rbf(X, y, kf, metric="accuracy") :
     
     ### ========== TODO : START ========== ###
     # part 3b: create grid, then select optimal hyperparameters using cross-validation
-    return 0.0, 1.0
+
+    C_range = 10.0 ** np.arange(-3, 3)
+    gamma_range = np.arange(1.e-03, 4, 0.001)
+
+    scores = np.zeros((len(C_range), len(gamma_range)))
+
+    for i in range(len(C_range)) :
+        for j in range(len(gamma_range)) :
+            scores[i][j] = cv_performance(SVC(kernel='rbf', C=C_range[i], gamma=gamma_range[j]), X, y, kf, metric)
+    print scores
+
+    max = 0
+    max_c = 0
+    max_gamma = 0
+    for i in range(scores.shape[0]) :
+        for j in range(scores.shape[1]) :
+            if scores[i][j] > max:
+                scores[i][j] = max
+                max_c = i
+                max_gamma = j
+
+    return C_range[max_c], gamma_range[max_gamma]
     ### ========== TODO : END ========== ###
 
 
@@ -486,7 +507,10 @@ def main() :
     # part 2d: for each metric, select optimal hyperparameter for linear-kernel SVM using CV
     
     # part 3c: for each metric, select optimal hyperparameter for RBF-SVM using CV
-    
+    kf = StratifiedKFold(5)
+
+    select_param_rbf(X_train, y_train, kf)
+
     # part 4a: train linear- and RBF-kernel SVMs with selected hyperparameters
     
     # part 4c: use bootstrapping to report performance on test data
