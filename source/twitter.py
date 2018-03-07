@@ -97,11 +97,14 @@ def extract_dictionary(infile) :
     """
     
     word_list = {}
+    index = 0
     with open(infile, 'rU') as fid :
-        ### ========== TODO : START ========== ###
-        # part 1a: process each line to populate word_list
-        pass
-        ### ========== TODO : END ========== ###
+        for line in fid :
+            words = extract_words(line)
+            for i in range(len(words)):
+                if words[i] not in word_list :
+                    word_list[words[i]] = index
+                    index+=1
 
     return word_list
 
@@ -129,10 +132,13 @@ def extract_feature_vectors(infile, word_list) :
     feature_matrix = np.zeros((num_lines, num_words))
     
     with open(infile, 'rU') as fid :
-        ### ========== TODO : START ========== ###
-        # part 1b: process each line to populate feature_matrix
-        pass
-        ### ========== TODO : END ========== ###
+        i = 0
+        for line in fid :
+            for j in range(num_words) :
+                word = word_list.keys()[word_list.values().index(j)]
+                if word in extract_words(line) :
+                    feature_matrix[i][j] = 1
+            i+=1
     
     return feature_matrix
 
