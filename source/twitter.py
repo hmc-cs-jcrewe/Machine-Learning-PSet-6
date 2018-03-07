@@ -138,8 +138,8 @@ def extract_feature_vectors(infile, word_list) :
                 word = word_list.keys()[word_list.values().index(j)]
                 if word in extract_words(line) :
                     feature_matrix[i][j] = 1
-            i+=1
-    
+            i+=1   
+             
     return feature_matrix
 
 
@@ -208,7 +208,25 @@ def performance(y_true, y_pred, metric="accuracy") :
     
     ### ========== TODO : START ========== ###
     # part 2a: compute classifier performance
-    return 0
+    if metric == "accuracy":
+        return metrics.accuracy_score(y_true, y_label)
+    elif metric == "f1_score":
+        return metrics.f1_score(y_true, y_label) 
+    elif metric == "auroc":
+        return metrics.roc_auc_score(y_true, y_pred) # TODO - Ask Grutor on Wednesday 
+    elif metric == "precision":
+        return metrics.precision_score(y_true, y_label)
+    elif metric == "sensitivity":
+        return metrics.recall_score(y_true , y_label)
+    elif metric == "specificity":
+        CMatrix = metrics.confusion_matrix(y_true , y_label)
+        TN = CMatrix[0][0]
+        FP = CMatrix[0][1]
+        return float(TN) / (float(TN) + float(FP))
+    else:
+        return "Input has wrong metric"
+
+  
     ### ========== TODO : END ========== ###
 
 
@@ -226,8 +244,8 @@ def test_performance() :
     #      neg      fp (3)  tn (1)
     y_pred = [ 3.21288618, -1.72798696,  3.36205116, -5.40113156,  6.15356672,
                2.73636929, -6.55612296, -4.79228264,  8.30639981, -0.74368981]
-    metrics = ["accuracy", "f1_score", "auroc", "precision", "sensitivity", "specificity"]
-    scores  = [     3/10.,      4/11.,   5/12.,        2/5.,          2/6.,          1/4.]
+    metrics = ["accuracy", "f1_score", "auroc", "precision", "sensitivity", "specificity"] # TODO - put auroc back
+    scores  = [     3/10.,      4/11.,  5/12.,       2/5.,          2/6.,          1/4.] # TODO - pur 5/12. in the third index
     
     import sys
     eps = sys.float_info.epsilon
@@ -294,15 +312,18 @@ def select_param_linear(X, y, kf, metric="accuracy", plot=True) :
     
     print 'Linear SVM Hyperparameter Selection based on ' + str(metric) + ':'
     C_range = 10.0 ** np.arange(-3, 3)
-    
+    scores = [0 for _ in xrange(len(C_range))] # dummy values, feel free to change
     ### ========== TODO : START ========== ###
     # part 2c: select optimal hyperparameter using cross-validation
-    scores = [0 for _ in xrange(len(C_range))] # dummy values, feel free to change
+    for i in range(len(C_range)):
+        clf = SVC(C_range[i], kernel = 'linear')
+        scores[i] = cv_performance(clf, X, y, kf, metric)
+    
     
     if plot:
         lineplot(C_range, scores, metric)
     
-    return 1.0
+    return C_range[np.argmax(scores)] # Todo - make sure np.argmax returns index
     ### ========== TODO : END ========== ###
 
 
@@ -482,9 +503,11 @@ def main() :
     test_performance()
     
     # part 2b: create stratified folds (5-fold CV)
-    
-    # part 2d: for each metric, select optimal hyperparameter for linear-kernel SVM using CV
-    
+    kf = StratifiedKFold(5) 
+    ## part 2d: for each metric, select optimal hyperparameter for linear-kernel SVM using CV
+    # TODO - Ask grutor how to plot all on one line 
+    for metric in metric_list:
+        print select_param_linear(X_train, y_train, kf, metric)
     # part 3c: for each metric, select optimal hyperparameter for RBF-SVM using CV
     
     # part 4a: train linear- and RBF-kernel SVMs with selected hyperparameters
