@@ -1,5 +1,5 @@
 """
-Author      : Yi-Chieh Wu
+Author      : Matt Guillory & Jackson Crewe
 Class       : HMC CS 158
 Date        : 2018 Feb 14
 Description : Twitter
@@ -206,14 +206,13 @@ def performance(y_true, y_pred, metric="accuracy") :
     y_label = np.sign(y_pred)
     y_label[y_label==0] = 1 # map points of hyperplane to +1
     
-    ### ========== TODO : START ========== ###
     # part 2a: compute classifier performance
     if metric == "accuracy":
         return metrics.accuracy_score(y_true, y_label)
     elif metric == "f1_score":
         return metrics.f1_score(y_true, y_label) 
     elif metric == "auroc":
-        return metrics.roc_auc_score(y_true, y_pred) # TODO - Ask Grutor on Wednesday 
+        return metrics.roc_auc_score(y_true, y_pred)
     elif metric == "precision":
         return metrics.precision_score(y_true, y_label)
     elif metric == "sensitivity":
@@ -226,8 +225,6 @@ def performance(y_true, y_pred, metric="accuracy") :
     else:
         return "Input has wrong metric"
 
-  
-    ### ========== TODO : END ========== ###
 
 
 def test_performance() :
@@ -244,8 +241,8 @@ def test_performance() :
     #      neg      fp (3)  tn (1)
     y_pred = [ 3.21288618, -1.72798696,  3.36205116, -5.40113156,  6.15356672,
                2.73636929, -6.55612296, -4.79228264,  8.30639981, -0.74368981]
-    metrics = ["accuracy", "f1_score", "auroc", "precision", "sensitivity", "specificity"] # TODO - put auroc back
-    scores  = [     3/10.,      4/11.,  5/12.,       2/5.,          2/6.,          1/4.] # TODO - pur 5/12. in the third index
+    metrics = ["accuracy", "f1_score", "auroc", "precision", "sensitivity", "specificity"]
+    scores  = [     3/10.,      4/11.,  5/12.,       2/5.,          2/6.,          1/4.]
     
     import sys
     eps = sys.float_info.epsilon
@@ -313,7 +310,6 @@ def select_param_linear(X, y, kf, metric="accuracy", plot=True) :
     print 'Linear SVM Hyperparameter Selection based on ' + str(metric) + ':'
     C_range = 10.0 ** np.arange(-3, 3)
     scores = [0 for _ in xrange(len(C_range))] # dummy values, feel free to change
-    ### ========== TODO : START ========== ###
     # part 2c: select optimal hyperparameter using cross-validation
     for i in range(len(C_range)):
         clf = SVC(C_range[i], kernel = 'linear')
@@ -323,8 +319,7 @@ def select_param_linear(X, y, kf, metric="accuracy", plot=True) :
     if plot:
         lineplot(C_range, scores, metric)
     
-    return C_range[np.argmax(scores)] # Todo - make sure np.argmax returns index
-    ### ========== TODO : END ========== ###
+    return C_range[np.argmax(scores)]
 
 
 def select_param_rbf(X, y, kf, metric="accuracy") :
@@ -444,7 +439,7 @@ def lineplot(x, y, label):
     xx = range(len(x))
     plt.plot(xx, y, linestyle='-', linewidth=2, label=label)
     plt.xticks(xx, x)    
-    plt.show()
+    
 
 
 def plot_results(metrics, classifiers, *args):
@@ -533,16 +528,22 @@ def main() :
     X_train, X_test = X[:560], X[560:]
     y_train, y_test = y[:560], y[560:]
     
+ 
     metric_list = ["accuracy", "f1_score", "auroc", "precision", "sensitivity", "specificity"]
-    
-    ### ========== TODO : START ========== ###
-    # test_performance()
+
+    test_performance()
     
     # part 2b: create stratified folds (5-fold CV)
     kf = StratifiedKFold(5) 
     ## part 2d: for each metric, select optimal hyperparameter for linear-kernel SVM using CV
     for metric in metric_list:
         print select_param_linear(X_train, y_train, kf, metric)
+    
+    plt.legend(metric_list, loc='lower right')
+    plt.ylabel('Metric')
+    plt.xlabel('C  value')
+    plt.title("Graph of various metrics while varying C")
+    plt.show()
     # part 3c: for each metric, select optimal hyperparameter for RBF-SVM using CV
     kf = StratifiedKFold(5)
 
@@ -570,8 +571,21 @@ def main() :
     plot_results(metric_list, ["linear", "rbf"], results[0], results[1], results[2])
 
     # part 5: identify important features
-    
-    ### ========== TODO : END ========== ###
+    # we know C = 1.0 is the best value 
+    C_max = 1.0
+    clf = SVC(C_max, kernel = 'linear')
+    clf.fit(X_train, y_train)
+    print np.argsort(clf.coef_[0])[:20]
+    print np.argsort(clf.coef_[0])[-20:]
+    negindicies = [493,   32,  965,  905,  547, 1747,  196,   98,    0,  664]
+    for index in negindicies:
+        word = dictionary.keys()[dictionary.values().index(index)]
+        print word, "   ",  clf.coef_[0][index]
+
+    posIndicies = [61, 236, 583, 107, 169, 24 ,847, 507, 221, 128]
+    for index in posIndicies:
+        word = dictionary.keys()[dictionary.values().index(index)]
+        print word, "   ",  clf.coef_[0][index]
     
     ### ========== TODO : START ========== ###
     # Twitter contest
