@@ -353,8 +353,8 @@ def select_param_rbf(X, y, kf, metric="accuracy") :
     ### ========== TODO : START ========== ###
     # part 3b: create grid, then select optimal hyperparameters using cross-validation
 
-    C_range = 10.0 ** np.arange(-3, 3)
-    gamma_range = np.arange(1.e-03, 4, 0.001)
+    C_range = 10.0 ** np.arange(-1, 3)
+    gamma_range = np.arange(0.0001, 0.05, 0.001)
 
     scores = np.zeros((len(C_range), len(gamma_range)))
 
@@ -363,17 +363,17 @@ def select_param_rbf(X, y, kf, metric="accuracy") :
             scores[i][j] = cv_performance(SVC(kernel='rbf', C=C_range[i], gamma=gamma_range[j]), X, y, kf, metric)
     print scores
 
-    max = 0
+    max_score = 0
     max_c = 0
     max_gamma = 0
-    for i in range(scores.shape[0]) :
-        for j in range(scores.shape[1]) :
-            if scores[i][j] > max:
-                scores[i][j] = max
+    for i in range(len(C_range)) :
+        for j in range(len(gamma_range)) :
+            if scores[i][j] > max_score:
+                max_score = scores[i][j]
                 max_c = i
                 max_gamma = j
 
-    return C_range[max_c], gamma_range[max_gamma]
+    return max_score, C_range[max_c], gamma_range[max_gamma]
     ### ========== TODO : END ========== ###
 
 
@@ -403,11 +403,26 @@ def performance_CI(clf, X, y, metric="accuracy") :
     except :
         y_pred = clf.predict(X)
     score = performance(y, y_pred, metric)
-    
-    ### ========== TODO : START ========== ###
-    # part 4b: use bootstrapping to compute 95% confidence interval
-    # hint: use np.random.randint(...)
-    return score, 0.0, 1.0
+
+    n,d = X.shape
+    t = 1000
+    scores = np.zeros(t)
+
+    for i in range(t):
+        random_guess = np.random.randint(0, n, (1,n))[0]
+        new_X = np.zeros((n, d))
+        new_y = np.zeros(n)
+        for j in range(n):
+            new_X[j] = X[j]
+            new_y[j] = y[j]
+        try :
+            y_pred = clf.decision_function(X)
+        except :
+            y_pred = clf.predict(new_X)
+        scores[i] = performance(new_y, y_pred, metric)
+
+    sorted_scores = np.sort(scores)
+    return np.mean(scores), sorted_scores[24], sorted_scores[974]
     ### ========== TODO : END ========== ###
 
 
@@ -521,24 +536,39 @@ def main() :
     metric_list = ["accuracy", "f1_score", "auroc", "precision", "sensitivity", "specificity"]
     
     ### ========== TODO : START ========== ###
-    test_performance()
+    # test_performance()
     
     # part 2b: create stratified folds (5-fold CV)
     kf = StratifiedKFold(5) 
     ## part 2d: for each metric, select optimal hyperparameter for linear-kernel SVM using CV
-    # TODO - Ask grutor how to plot all on one line 
     for metric in metric_list:
         print select_param_linear(X_train, y_train, kf, metric)
     # part 3c: for each metric, select optimal hyperparameter for RBF-SVM using CV
     kf = StratifiedKFold(5)
 
-    select_param_rbf(X_train, y_train, kf)
+    for metric in metric_list :
+        score, best_C, best_gamma = select_param_rbf(X_train, y_train, kf, metric)
 
     # part 4a: train linear- and RBF-kernel SVMs with selected hyperparameters
-    
+    dummy_clf = DummyClassifier(strategy = 'most_frequent')
+    dummy_clf.fit(X_train, y_train)
+    linearsvm_clf = SVC(1.0, kernel = 'linear')
+    linearsvm_clf.fit(X_train, y_train)
+    rbfsvm_clf = SVC(kernel='rbf', C=100.0, gamma=0.02)
+    rbfsvm_clf.fit(X_train, y_train)
+
+    classifiers = [dummy_clf, linearsvm_clf, rbfsvm_clf]
+
     # part 4c: use bootstrapping to report performance on test data
     #          use plot_results(...) to make plot
-    
+    results = [ [0 for i in range(6)] for i in range(3)]
+
+    for i in range(3) :
+        for j in range(6) :
+            results[i][j] = performance_CI(classifiers[i], X_test, y_test, metric_list[j])
+
+    plot_results(metric_list, ["linear", "rbf"], results[0], results[1], results[2])
+
     # part 5: identify important features
     
     ### ========== TODO : END ========== ###
